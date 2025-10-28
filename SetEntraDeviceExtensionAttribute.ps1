@@ -11,13 +11,15 @@
 $Global:GraphBase    = "https://graph.microsoft.com"
 $Global:GraphVersion = "beta"
 <#
-Don't change tenant ID and client ID as we suppose to use the app dedicated for Workplace.!!!!
+Change the variables according to your need
 #>
+
 $tenant = ""   
 $client = ""
 $Scope = "Device.Read.All Device.ReadWrite.All Directory.Read.All offline_access DeviceManagementServiceConfig.Read.All DeviceManagementManagedDevices.Read.All "
 $SerialNumber= ""
-
+$SelectedExtensionAttribute = "extensionAttribute15" #change it to whatever you want 1-15
+$Value = "BYOD" #change it to whatever value you want to set on the device object
 
 function Get-GraphInteractiveToken {
     param(
@@ -202,9 +204,9 @@ function Set-DeviceExtensionAttribute {
   
     param(
         [Parameter(Mandatory)][string]$AccessToken,
-        [Parameter(Mandatory)][string]$DeviceObjectId,            # directory object id
-        [string]$AttributeName = "extensionAttribute15",          # extensionAttribute1..15
-        [string]$Value         = "BYODDevice"
+        [Parameter(Mandatory)][string]$DeviceObjectId,
+        [Parameter(Mandatory)][string]$AttributeName,
+        [Parameter(Mandatory)][string]$Value
     )
 
     if ($AttributeName -notmatch '^extensionAttribute(1[0-5]|[1-9])$') {
@@ -242,4 +244,4 @@ Here don't change anything in here
 
 $GetEntraObjID = Get-EntraDeviceObjUsingDeviceID -AccessToken $token.access_token -EntraDeviceID $GetAutopilotDeviceID.AzureAdDeviceId
 
-Set-DeviceExtensionAttribute -AccessToken $tok.access_token -DeviceObjectId $GetEntraObjID.id 
+Set-DeviceExtensionAttribute -AccessToken $tok.access_token -DeviceObjectId $GetEntraObjID.id -Attribute $SelectedExtensionAttribute -Value $value
