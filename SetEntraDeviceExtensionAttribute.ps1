@@ -21,6 +21,8 @@ $SerialNumber= ""
 $SelectedExtensionAttribute = "extensionAttribute15" #change it to whatever you want 1-15
 $Value = "BYOD" #change it to whatever value you want to set on the device object
 
+
+
 function Get-GraphInteractiveToken {
     param(
         [Parameter(Mandatory)][string]$TenantId,   
@@ -150,18 +152,9 @@ function Get-AutopilotDeviceUsingSerial {
     $Filter_ImportWindows_SerialNumber = '?$filter=contains(serialNumber,'
     $Filter_ImportWindows_Serial_Value = "'$SerialNumber'"
     $Filter_ImportWindows_Serial_LastSyntax = ')'
-    $graph_ImportWindowsAutopilot_Uri = "https://graph.microsoft.com/beta/deviceManagement/importedWindowsAutopilotDeviceIdentities$Filter_ImportWindows_SerialNumber$Filter_ImportWindows_Serial_Value$Filter_ImportWindows_Serial_LastSyntax"
     $graph_WindowsAutopilot_Uri = "https://graph.microsoft.com/beta/deviceManagement/windowsAutopilotDeviceIdentities$Filter_ImportWindows_SerialNumber$Filter_ImportWindows_Serial_Value$Filter_ImportWindows_Serial_LastSyntax"
 
     try {
-        # Try imported identities first
-        $ImportResult = (Invoke-RestMethod -Uri $graph_ImportWindowsAutopilot_Uri -Headers $Headers -Method Get -ErrorAction SilentlyContinue).value
-
-        if ($ImportResult) {
-            return $ImportResult
-        }
-
-        # If nothing found, try Windows Autopilot identities
         $WindowsResult = (Invoke-RestMethod -Uri $graph_WindowsAutopilot_Uri -Headers $Headers -Method Get -ErrorAction SilentlyContinue).value
         return $WindowsResult
     }
@@ -170,7 +163,6 @@ function Get-AutopilotDeviceUsingSerial {
         return $null
     }
 }
-
 
 function Get-EntraDeviceObjUsingDeviceID {
     param (
@@ -212,6 +204,13 @@ function Set-DeviceExtensionAttribute {
     if ($AttributeName -notmatch '^extensionAttribute(1[0-5]|[1-9])$') {
         throw "AttributeName must be extensionAttribute1..extensionAttribute15."
     }
+    
+
+    $Headers = @{
+        'Authorization' = "Bearer $AccessToken"
+        'Content-Type'  = 'application/json'
+    }
+
 
     $body = @{
         extensionAttributes = @{
@@ -219,9 +218,10 @@ function Set-DeviceExtensionAttribute {
         }
     } | ConvertTo-Json -Depth 5
 
-    $relative = "devices/$DeviceObjectId"
+    $URL = "https://graph.microsoft.com/beta/devices/$DeviceObjectId"
+    
     try {
-        $resp = Invoke-GraphPatch -AccessToken $AccessToken -RelativeUrl $relative -BodyJson $body
+        $resp = Invoke-RestMethod -Headers $Headers -Method Patch -Body $body -Uri  $URL
         if ($resp) { return $resp } else { return $true }
     } catch {
         throw "Failed to patch device '$DeviceObjectId' $AttributeName : $Value. Error: $_"
@@ -232,16 +232,8 @@ function Set-DeviceExtensionAttribute {
 
 $token = Get-GraphInteractiveToken -TenantId $tenant -ClientId $client -Scopes $Scope
 
-<#
-Change the serialnumber here
-#>
 $GetAutopilotDeviceID = Get-AutopilotDeviceUsingSerial -AccessToken $token.access_token -SerialNumber $SerialNumber
-
-
-<#
-Here don't change anything in here
-#>
 
 $GetEntraObjID = Get-EntraDeviceObjUsingDeviceID -AccessToken $token.access_token -EntraDeviceID $GetAutopilotDeviceID.AzureAdDeviceId
 
-Set-DeviceExtensionAttribute -AccessToken $tok.access_token -DeviceObjectId $GetEntraObjID.id -Attribute $SelectedExtensionAttribute -Value $value
+Set-DeviceExtensionAttribute -AccessToken $token.access_token -DeviceObjectId $GetEntraObjID.id -Attribute $SelectedExtensionAttribute -Value $value
