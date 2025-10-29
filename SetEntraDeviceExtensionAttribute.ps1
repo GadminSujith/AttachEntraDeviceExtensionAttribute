@@ -55,11 +55,23 @@ function Get-GraphInteractiveToken {
     $authorizeBase = "https://login.microsoftonline.com/$TenantId/oauth2/v2.0/authorize"
     $tokenUrl      = "https://login.microsoftonline.com/$TenantId/oauth2/v2.0/token"
 
- 
+<# 
     if (-not $Port) { $Port = Get-Random -Minimum 49152 -Maximum 65535 }
     $redirectUri = "http://localhost:$Port/"
     $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $Port)
     try { $listener.Start() } catch { throw "Could not start localhost listener on $redirectUri. Try another port." }
+#>
+
+   # --- loopback TCP listener (dual-stack: IPv6 + IPv4) ---
+if (-not $Port) { $Port = Get-Random -Minimum 49152 -Maximum 65535 }
+$redirectUri = "http://localhost:$Port/"
+
+# Bind to IPv6 loopback and enable DualMode so IPv4 127.0.0.1 also works
+$listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::IPv6Loopback, $Port)
+try { $listener.Server.DualMode = $true } catch { }  # ignore if not supported
+try { $listener.Start() } catch {
+    throw "Could not start localhost listener on $redirectUri. Try another port."
+}
 
    
     $codeVerifier  = New-CodeVerifier
