@@ -1,10 +1,10 @@
 <# 
- Reference:https://learn.microsoft.com/en-us/answers/questions/339746/filtering-doesnt-seem-to-work-on-a-newer-intuneap
- 
- Uses Graph beta for Autopilot + device extensionAttributes
-
- Ensure you have the following delegated permissions 
- "Device.Read.All Device.ReadWrite.All Directory.Read.All offline_access DeviceManagementServiceConfig.Read.All DeviceManagementManagedDevices.Read.All "
+Author: Sujith
+Reference:https://learn.microsoft.com/en-us/answers/questions/339746/filtering-doesnt-seem-to-work-on-a-newer-intuneap
+Purpose: Add extension attributes to devices 
+Uses Graph beta for Autopilot + device extensionAttributes
+Ensure you have the following delegated permissions 
+"Device.Read.All Device.ReadWrite.All Directory.Read.All offline_access DeviceManagementServiceConfig.Read.All DeviceManagementManagedDevices.Read.All "
 #>
 
 
