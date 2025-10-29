@@ -62,16 +62,23 @@ function Get-GraphInteractiveToken {
     try { $listener.Start() } catch { throw "Could not start localhost listener on $redirectUri. Try another port." }
 #>
 
-   # --- loopback TCP listener (dual-stack: IPv6 + IPv4) ---
+# --- loopback TCP listener (force IPv4) ---
 if (-not $Port) { $Port = Get-Random -Minimum 49152 -Maximum 65535 }
-$redirectUri = "http://localhost:$Port/"
 
-# Bind to IPv6 loopback and enable DualMode so IPv4 127.0.0.1 also works
-$listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::IPv6Loopback, $Port)
-try { $listener.Server.DualMode = $true } catch { }  # ignore if not supported
+# Use 127.0.0.1 explicitly to avoid IPv6/localhost quirks on Windows
+$redirectUri = "http://127.0.0.1:$Port/"
+
+# Bind to IPv4 loopback
+$listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $Port)
+
 try { $listener.Start() } catch {
     throw "Could not start localhost listener on $redirectUri. Try another port."
 }
+
+# (optional but recommended) wait with timeout so it won't hang forever
+$async = $listener.BeginAcceptTcpClient($null,$null)
+if (-not $async.AsyncWaitHandle.WaitOne(120000)) { $listener.Stop(); throw "Timed out waiting for redirect." }
+$client = $listener.EndAcceptTcpClient($async)
 
    
     $codeVerifier  = New-CodeVerifier
